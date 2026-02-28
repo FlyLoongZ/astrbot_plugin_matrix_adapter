@@ -277,104 +277,263 @@ class PluginConfig:
         self._e2ee_store_path = self._data_dir / "e2ee"
         self._media_cache_dir = self._data_dir / "media"
 
-        # 其他配置仍然允许配置
-        self._oauth2_callback_port = config.get("matrix_oauth2_callback_port", 8765)
-        self._oauth2_callback_host = config.get(
-            "matrix_oauth2_callback_host", "127.0.0.1"
+        # 其他配置仍然允许配置（新 object 配置优先，兼容旧扁平键）
+        oauth2_obj = config.get("matrix_oauth2")
+        media_obj = config.get("matrix_media")
+        auto_download_obj = config.get("matrix_auto_download")
+        media_rules_obj = config.get("matrix_media_rules")
+
+        oauth2_callback_port = None
+        oauth2_callback_host = None
+        if isinstance(oauth2_obj, dict):
+            if isinstance(oauth2_obj.get("callback_port"), (int, float, str)):
+                oauth2_callback_port = oauth2_obj.get("callback_port")
+            if isinstance(oauth2_obj.get("callback_host"), str):
+                oauth2_callback_host = oauth2_obj.get("callback_host")
+
+        if oauth2_callback_port is None:
+            oauth2_callback_port = config.get("matrix_oauth2_callback_port")
+        if oauth2_callback_host is None:
+            oauth2_callback_host = config.get("matrix_oauth2_callback_host", "127.0.0.1")
+
+        self._oauth2_callback_port = _normalize_non_negative_int(
+            oauth2_callback_port,
+            8765,
+            min_value=1,
+            config_key="matrix_oauth2.callback_port",
         )
+        self._oauth2_callback_host = (
+            oauth2_callback_host
+            if isinstance(oauth2_callback_host, str)
+            else "127.0.0.1"
+        )
+
+        http_timeout_seconds = None
+        media_cache_gc_days = None
+        media_download_concurrency = None
+        quoted_media_background_download_concurrency = None
+        media_download_min_interval_ms = None
+        media_download_breaker_fail_threshold = None
+        media_download_breaker_cooldown_ms = None
+        media_download_breaker_max_cooldown_ms = None
+        media_cache_index_persist = None
+        media_download_max_in_memory_bytes = None
+        if isinstance(media_obj, dict):
+            if isinstance(media_obj.get("http_timeout_seconds"), (int, float, str)):
+                http_timeout_seconds = media_obj.get("http_timeout_seconds")
+            if isinstance(media_obj.get("cache_gc_days"), (int, float, str)):
+                media_cache_gc_days = media_obj.get("cache_gc_days")
+            if isinstance(media_obj.get("download_concurrency"), (int, float, str)):
+                media_download_concurrency = media_obj.get("download_concurrency")
+            if isinstance(
+                media_obj.get("quoted_background_download_concurrency"),
+                (int, float, str),
+            ):
+                quoted_media_background_download_concurrency = media_obj.get(
+                    "quoted_background_download_concurrency"
+                )
+            if isinstance(media_obj.get("download_min_interval_ms"), (int, float, str)):
+                media_download_min_interval_ms = media_obj.get("download_min_interval_ms")
+            if isinstance(
+                media_obj.get("download_breaker_fail_threshold"), (int, float, str)
+            ):
+                media_download_breaker_fail_threshold = media_obj.get(
+                    "download_breaker_fail_threshold"
+                )
+            if isinstance(
+                media_obj.get("download_breaker_cooldown_ms"), (int, float, str)
+            ):
+                media_download_breaker_cooldown_ms = media_obj.get(
+                    "download_breaker_cooldown_ms"
+                )
+            if isinstance(
+                media_obj.get("download_breaker_max_cooldown_ms"), (int, float, str)
+            ):
+                media_download_breaker_max_cooldown_ms = media_obj.get(
+                    "download_breaker_max_cooldown_ms"
+                )
+            if isinstance(media_obj.get("cache_index_persist"), (bool, str)):
+                media_cache_index_persist = media_obj.get("cache_index_persist")
+            if isinstance(
+                media_obj.get("download_max_in_memory_bytes"), (int, float, str)
+            ):
+                media_download_max_in_memory_bytes = media_obj.get(
+                    "download_max_in_memory_bytes"
+                )
+
+        if http_timeout_seconds is None:
+            http_timeout_seconds = config.get("matrix_http_timeout_seconds")
+        if media_cache_gc_days is None:
+            media_cache_gc_days = config.get("matrix_media_cache_gc_days")
+        if media_download_concurrency is None:
+            media_download_concurrency = config.get("matrix_media_download_concurrency")
+        if quoted_media_background_download_concurrency is None:
+            quoted_media_background_download_concurrency = config.get(
+                "matrix_quoted_media_background_download_concurrency"
+            )
+        if media_download_min_interval_ms is None:
+            media_download_min_interval_ms = config.get("matrix_media_download_min_interval_ms")
+        if media_download_breaker_fail_threshold is None:
+            media_download_breaker_fail_threshold = config.get(
+                "matrix_media_download_breaker_fail_threshold"
+            )
+        if media_download_breaker_cooldown_ms is None:
+            media_download_breaker_cooldown_ms = config.get(
+                "matrix_media_download_breaker_cooldown_ms"
+            )
+        if media_download_breaker_max_cooldown_ms is None:
+            media_download_breaker_max_cooldown_ms = config.get(
+                "matrix_media_download_breaker_max_cooldown_ms"
+            )
+        if media_cache_index_persist is None:
+            media_cache_index_persist = config.get("matrix_media_cache_index_persist")
+        if media_download_max_in_memory_bytes is None:
+            media_download_max_in_memory_bytes = config.get(
+                "matrix_media_download_max_in_memory_bytes"
+            )
+
         self._http_timeout_seconds = _normalize_non_negative_int(
-            config.get("matrix_http_timeout_seconds"),
+            http_timeout_seconds,
             _DEFAULT_HTTP_TIMEOUT_SECONDS,
             min_value=5,
-            config_key="matrix_http_timeout_seconds",
+            config_key="matrix_media.http_timeout_seconds",
         )
         self._media_cache_gc_days = _normalize_non_negative_int(
-            config.get("matrix_media_cache_gc_days"),
+            media_cache_gc_days,
             30,
             min_value=0,
-            config_key="matrix_media_cache_gc_days",
+            config_key="matrix_media.cache_gc_days",
         )
         self._media_download_concurrency = _normalize_non_negative_int(
-            config.get("matrix_media_download_concurrency"),
+            media_download_concurrency,
             4,
             min_value=1,
-            config_key="matrix_media_download_concurrency",
+            config_key="matrix_media.download_concurrency",
         )
         self._quoted_media_background_download_concurrency = (
             _normalize_non_negative_int(
-                config.get("matrix_quoted_media_background_download_concurrency"),
+                quoted_media_background_download_concurrency,
                 _DEFAULT_QUOTED_MEDIA_BACKGROUND_DOWNLOAD_CONCURRENCY,
                 min_value=1,
-                config_key="matrix_quoted_media_background_download_concurrency",
+                config_key="matrix_media.quoted_background_download_concurrency",
             )
         )
         self._media_download_min_interval_ms = _normalize_non_negative_int(
-            config.get("matrix_media_download_min_interval_ms"),
+            media_download_min_interval_ms,
             0,
             min_value=0,
-            config_key="matrix_media_download_min_interval_ms",
+            config_key="matrix_media.download_min_interval_ms",
         )
         self._media_download_breaker_fail_threshold = _normalize_non_negative_int(
-            config.get("matrix_media_download_breaker_fail_threshold"),
+            media_download_breaker_fail_threshold,
             6,
             min_value=0,
-            config_key="matrix_media_download_breaker_fail_threshold",
+            config_key="matrix_media.download_breaker_fail_threshold",
         )
         self._media_download_breaker_cooldown_ms = _normalize_non_negative_int(
-            config.get("matrix_media_download_breaker_cooldown_ms"),
+            media_download_breaker_cooldown_ms,
             5000,
             min_value=0,
-            config_key="matrix_media_download_breaker_cooldown_ms",
+            config_key="matrix_media.download_breaker_cooldown_ms",
         )
         self._media_download_breaker_max_cooldown_ms = _normalize_non_negative_int(
-            config.get("matrix_media_download_breaker_max_cooldown_ms"),
+            media_download_breaker_max_cooldown_ms,
             120000,
             min_value=0,
-            config_key="matrix_media_download_breaker_max_cooldown_ms",
+            config_key="matrix_media.download_breaker_max_cooldown_ms",
         )
-        self._media_cache_index_persist = _normalize_bool(
-            config.get("matrix_media_cache_index_persist"), True
-        )
-        self._media_auto_download_max_bytes = _normalize_non_negative_int(
-            config.get("matrix_media_auto_download_max_bytes"),
-            0,
-            min_value=0,
-            config_key="matrix_media_auto_download_max_bytes",
-        )
+        self._media_cache_index_persist = _normalize_bool(media_cache_index_persist, True)
         self._media_download_max_in_memory_bytes = _normalize_non_negative_int(
-            config.get("matrix_media_download_max_in_memory_bytes"),
+            media_download_max_in_memory_bytes,
             _DEFAULT_MEDIA_DOWNLOAD_MAX_IN_MEMORY_BYTES,
             min_value=0,
-            config_key="matrix_media_download_max_in_memory_bytes",
+            config_key="matrix_media.download_max_in_memory_bytes",
         )
-        self._media_auto_download_image = _normalize_bool(
-            config.get("matrix_media_auto_download_image"), True
+
+        media_auto_download_max_bytes = None
+        media_auto_download_image = None
+        media_auto_download_video = None
+        media_auto_download_audio = None
+        media_auto_download_file = None
+        media_auto_download_sticker = None
+        if isinstance(auto_download_obj, dict):
+            if isinstance(auto_download_obj.get("max_bytes"), (int, float, str)):
+                media_auto_download_max_bytes = auto_download_obj.get("max_bytes")
+            if isinstance(auto_download_obj.get("image"), (bool, str)):
+                media_auto_download_image = auto_download_obj.get("image")
+            if isinstance(auto_download_obj.get("video"), (bool, str)):
+                media_auto_download_video = auto_download_obj.get("video")
+            if isinstance(auto_download_obj.get("audio"), (bool, str)):
+                media_auto_download_audio = auto_download_obj.get("audio")
+            if isinstance(auto_download_obj.get("file"), (bool, str)):
+                media_auto_download_file = auto_download_obj.get("file")
+            if isinstance(auto_download_obj.get("sticker"), (bool, str)):
+                media_auto_download_sticker = auto_download_obj.get("sticker")
+
+        if media_auto_download_max_bytes is None:
+            media_auto_download_max_bytes = config.get("matrix_media_auto_download_max_bytes")
+        if media_auto_download_image is None:
+            media_auto_download_image = config.get("matrix_media_auto_download_image")
+        if media_auto_download_video is None:
+            media_auto_download_video = config.get("matrix_media_auto_download_video")
+        if media_auto_download_audio is None:
+            media_auto_download_audio = config.get("matrix_media_auto_download_audio")
+        if media_auto_download_file is None:
+            media_auto_download_file = config.get("matrix_media_auto_download_file")
+        if media_auto_download_sticker is None:
+            media_auto_download_sticker = config.get("matrix_media_auto_download_sticker")
+
+        self._media_auto_download_max_bytes = _normalize_non_negative_int(
+            media_auto_download_max_bytes,
+            0,
+            min_value=0,
+            config_key="matrix_auto_download.max_bytes",
         )
-        self._media_auto_download_video = _normalize_bool(
-            config.get("matrix_media_auto_download_video"), True
-        )
-        self._media_auto_download_audio = _normalize_bool(
-            config.get("matrix_media_auto_download_audio"), True
-        )
-        self._media_auto_download_file = _normalize_bool(
-            config.get("matrix_media_auto_download_file"), True
-        )
-        self._media_auto_download_sticker = _normalize_bool(
-            config.get("matrix_media_auto_download_sticker"), True
-        )
+        self._media_auto_download_image = _normalize_bool(media_auto_download_image, True)
+        self._media_auto_download_video = _normalize_bool(media_auto_download_video, True)
+        self._media_auto_download_audio = _normalize_bool(media_auto_download_audio, True)
+        self._media_auto_download_file = _normalize_bool(media_auto_download_file, True)
+        self._media_auto_download_sticker = _normalize_bool(media_auto_download_sticker, True)
+
+        media_upload_strict_mime_check = None
+        media_upload_blocked_extensions = None
+        media_upload_allowed_mime_rules = None
+        if isinstance(media_rules_obj, dict):
+            if isinstance(media_rules_obj.get("strict_mime_check"), (bool, str)):
+                media_upload_strict_mime_check = media_rules_obj.get("strict_mime_check")
+            if isinstance(
+                media_rules_obj.get("blocked_extensions"), (str, list, tuple, set)
+            ):
+                media_upload_blocked_extensions = media_rules_obj.get("blocked_extensions")
+            if isinstance(
+                media_rules_obj.get("allowed_mime_rules"), (str, list, tuple, set)
+            ):
+                media_upload_allowed_mime_rules = media_rules_obj.get("allowed_mime_rules")
+
+        if media_upload_strict_mime_check is None:
+            media_upload_strict_mime_check = config.get("matrix_media_upload_strict_mime_check")
+        if media_upload_blocked_extensions is None:
+            media_upload_blocked_extensions = config.get(
+                "matrix_media_upload_blocked_extensions"
+            )
+        if media_upload_allowed_mime_rules is None:
+            media_upload_allowed_mime_rules = config.get(
+                "matrix_media_upload_allowed_mime_rules"
+            )
+
         self._media_upload_strict_mime_check = _normalize_bool(
-            config.get("matrix_media_upload_strict_mime_check"), True
+            media_upload_strict_mime_check, True
         )
         self._media_upload_blocked_extensions = _normalize_token_list(
-            config.get("matrix_media_upload_blocked_extensions"),
+            media_upload_blocked_extensions,
             _DEFAULT_MEDIA_UPLOAD_BLOCKED_EXTENSIONS,
             extension_mode=True,
-            config_key="matrix_media_upload_blocked_extensions",
+            config_key="matrix_media_rules.blocked_extensions",
         )
         self._media_upload_allowed_mime_rules = _normalize_token_list(
-            config.get("matrix_media_upload_allowed_mime_rules"),
+            media_upload_allowed_mime_rules,
             _DEFAULT_MEDIA_UPLOAD_ALLOWED_MIME_RULES,
-            config_key="matrix_media_upload_allowed_mime_rules",
+            config_key="matrix_media_rules.allowed_mime_rules",
         )
         # 消息类型配置
         self._force_message_type = _normalize_message_type(
