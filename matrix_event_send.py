@@ -151,6 +151,19 @@ def _fallback_content_for_segment(segment) -> tuple[str, str | None]:
     return f"[{type(segment).__name__}]", None
 
 
+def _is_media_security_validation_error(err: Exception) -> bool:
+    message = str(err)
+    security_error_prefixes = (
+        "Blocked media upload extension:",
+        "Declared MIME type is not allowed:",
+        "Sniffed MIME type is not allowed:",
+        "Declared MIME does not match file signature:",
+        "Declared MIME does not match file extension:",
+        "File extension does not match file signature:",
+    )
+    return any(message.startswith(prefix) for prefix in security_error_prefixes)
+
+
 async def send_with_client_impl(
     client,
     message_chain: MessageChain,
@@ -231,6 +244,11 @@ async def send_with_client_impl(
                     upload_size_limit,
                 )
                 sent_count += 1
+            except ValueError as e:
+                if _is_media_security_validation_error(e):
+                    logger.warning(f"跳过图片消息（媒体校验失败）：{e}")
+                else:
+                    logger.error(f"发送图片消息失败：{e}")
             except Exception as e:
                 logger.error(f"发送图片消息失败：{e}")
 
