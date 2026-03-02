@@ -141,7 +141,10 @@ class E2EEManagerSecretsMixin:
 
             elif secret_name == SECRET_CROSS_SIGNING_MASTER:
                 # 获取主交叉签名密钥
-                if self._cross_signing and self._cross_signing.master_private_key is not None:
+                if (
+                    self._cross_signing
+                    and self._cross_signing.master_private_key is not None
+                ):
                     key = self._cross_signing.master_private_key
                     if key:
                         return base64.b64encode(key).decode("utf-8")
@@ -150,7 +153,10 @@ class E2EEManagerSecretsMixin:
 
             elif secret_name == SECRET_CROSS_SIGNING_SELF_SIGNING:
                 # 获取自签名密钥
-                if self._cross_signing and self._cross_signing.self_signing_private_key is not None:
+                if (
+                    self._cross_signing
+                    and self._cross_signing.self_signing_private_key is not None
+                ):
                     key = self._cross_signing.self_signing_private_key
                     if key:
                         return base64.b64encode(key).decode("utf-8")
@@ -159,7 +165,10 @@ class E2EEManagerSecretsMixin:
 
             elif secret_name == SECRET_CROSS_SIGNING_USER_SIGNING:
                 # 获取用户签名密钥
-                if self._cross_signing and self._cross_signing.user_signing_private_key is not None:
+                if (
+                    self._cross_signing
+                    and self._cross_signing.user_signing_private_key is not None
+                ):
                     key = self._cross_signing.user_signing_private_key
                     if key:
                         return base64.b64encode(key).decode("utf-8")

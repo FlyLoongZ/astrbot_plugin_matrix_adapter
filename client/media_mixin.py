@@ -466,9 +466,7 @@ class MediaMixin:
             # ISO BMFF family (MP4/HEIF/AVIF/etc.)
             # bytes[8:12] is major brand, then minor version, then compatible brands.
             # We scan early brand slots to avoid misclassifying AVIF as generic MP4.
-            brand_bytes = [
-                data[i : i + 4] for i in range(8, min(len(data), 64) - 3, 4)
-            ]
+            brand_bytes = [data[i : i + 4] for i in range(8, min(len(data), 64) - 3, 4)]
             if any(brand in {b"avif", b"avis"} for brand in brand_bytes):
                 return "image/avif"
             if any(

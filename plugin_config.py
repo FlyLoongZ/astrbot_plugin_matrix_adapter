@@ -294,7 +294,9 @@ class PluginConfig:
         if oauth2_callback_port is None:
             oauth2_callback_port = config.get("matrix_oauth2_callback_port")
         if oauth2_callback_host is None:
-            oauth2_callback_host = config.get("matrix_oauth2_callback_host", "127.0.0.1")
+            oauth2_callback_host = config.get(
+                "matrix_oauth2_callback_host", "127.0.0.1"
+            )
 
         self._oauth2_callback_port = _normalize_non_negative_int(
             oauth2_callback_port,
@@ -333,7 +335,9 @@ class PluginConfig:
                     "quoted_background_download_concurrency"
                 )
             if isinstance(media_obj.get("download_min_interval_ms"), (int, float, str)):
-                media_download_min_interval_ms = media_obj.get("download_min_interval_ms")
+                media_download_min_interval_ms = media_obj.get(
+                    "download_min_interval_ms"
+                )
             if isinstance(
                 media_obj.get("download_breaker_fail_threshold"), (int, float, str)
             ):
@@ -372,7 +376,9 @@ class PluginConfig:
                 "matrix_quoted_media_background_download_concurrency"
             )
         if media_download_min_interval_ms is None:
-            media_download_min_interval_ms = config.get("matrix_media_download_min_interval_ms")
+            media_download_min_interval_ms = config.get(
+                "matrix_media_download_min_interval_ms"
+            )
         if media_download_breaker_fail_threshold is None:
             media_download_breaker_fail_threshold = config.get(
                 "matrix_media_download_breaker_fail_threshold"
@@ -442,7 +448,9 @@ class PluginConfig:
             min_value=0,
             config_key="matrix_media.download_breaker_max_cooldown_ms",
         )
-        self._media_cache_index_persist = _normalize_bool(media_cache_index_persist, True)
+        self._media_cache_index_persist = _normalize_bool(
+            media_cache_index_persist, True
+        )
         self._media_download_max_in_memory_bytes = _normalize_non_negative_int(
             media_download_max_in_memory_bytes,
             _DEFAULT_MEDIA_DOWNLOAD_MAX_IN_MEMORY_BYTES,
@@ -471,7 +479,9 @@ class PluginConfig:
                 media_auto_download_sticker = auto_download_obj.get("sticker")
 
         if media_auto_download_max_bytes is None:
-            media_auto_download_max_bytes = config.get("matrix_media_auto_download_max_bytes")
+            media_auto_download_max_bytes = config.get(
+                "matrix_media_auto_download_max_bytes"
+            )
         if media_auto_download_image is None:
             media_auto_download_image = config.get("matrix_media_auto_download_image")
         if media_auto_download_video is None:
@@ -481,7 +491,9 @@ class PluginConfig:
         if media_auto_download_file is None:
             media_auto_download_file = config.get("matrix_media_auto_download_file")
         if media_auto_download_sticker is None:
-            media_auto_download_sticker = config.get("matrix_media_auto_download_sticker")
+            media_auto_download_sticker = config.get(
+                "matrix_media_auto_download_sticker"
+            )
 
         self._media_auto_download_max_bytes = _normalize_non_negative_int(
             media_auto_download_max_bytes,
@@ -489,29 +501,45 @@ class PluginConfig:
             min_value=0,
             config_key="matrix_auto_download.max_bytes",
         )
-        self._media_auto_download_image = _normalize_bool(media_auto_download_image, True)
-        self._media_auto_download_video = _normalize_bool(media_auto_download_video, True)
-        self._media_auto_download_audio = _normalize_bool(media_auto_download_audio, True)
+        self._media_auto_download_image = _normalize_bool(
+            media_auto_download_image, True
+        )
+        self._media_auto_download_video = _normalize_bool(
+            media_auto_download_video, True
+        )
+        self._media_auto_download_audio = _normalize_bool(
+            media_auto_download_audio, True
+        )
         self._media_auto_download_file = _normalize_bool(media_auto_download_file, True)
-        self._media_auto_download_sticker = _normalize_bool(media_auto_download_sticker, True)
+        self._media_auto_download_sticker = _normalize_bool(
+            media_auto_download_sticker, True
+        )
 
         media_upload_strict_mime_check = None
         media_upload_blocked_extensions = None
         media_upload_allowed_mime_rules = None
         if isinstance(media_rules_obj, dict):
             if isinstance(media_rules_obj.get("strict_mime_check"), (bool, str)):
-                media_upload_strict_mime_check = media_rules_obj.get("strict_mime_check")
+                media_upload_strict_mime_check = media_rules_obj.get(
+                    "strict_mime_check"
+                )
             if isinstance(
                 media_rules_obj.get("blocked_extensions"), (str, list, tuple, set)
             ):
-                media_upload_blocked_extensions = media_rules_obj.get("blocked_extensions")
+                media_upload_blocked_extensions = media_rules_obj.get(
+                    "blocked_extensions"
+                )
             if isinstance(
                 media_rules_obj.get("allowed_mime_rules"), (str, list, tuple, set)
             ):
-                media_upload_allowed_mime_rules = media_rules_obj.get("allowed_mime_rules")
+                media_upload_allowed_mime_rules = media_rules_obj.get(
+                    "allowed_mime_rules"
+                )
 
         if media_upload_strict_mime_check is None:
-            media_upload_strict_mime_check = config.get("matrix_media_upload_strict_mime_check")
+            media_upload_strict_mime_check = config.get(
+                "matrix_media_upload_strict_mime_check"
+            )
         if media_upload_blocked_extensions is None:
             media_upload_blocked_extensions = config.get(
                 "matrix_media_upload_blocked_extensions"
