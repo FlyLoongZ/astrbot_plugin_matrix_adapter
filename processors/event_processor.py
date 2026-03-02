@@ -676,6 +676,9 @@ class MatrixEventProcessor(MatrixEventProcessorStreams, MatrixEventProcessorMemb
         for event in events:
             event_type = event.get("type")
             sender = event.get("sender")
+            if not isinstance(sender, str) or not sender:
+                logger.warning(f"to_device 事件缺少 sender，跳过：type={event_type}")
+                continue
             content = event.get("content", {})
 
             logger.debug(f"处理 to_device 事件：type={event_type} sender={sender}")

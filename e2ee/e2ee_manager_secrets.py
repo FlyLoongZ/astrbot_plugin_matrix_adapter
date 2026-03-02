@@ -254,7 +254,7 @@ class E2EEManagerSecretsMixin:
         Returns:
             加密后的内容，或 None
         """
-        if not self._olm:
+        if not self._olm or not self._store:
             return None
 
         try:
@@ -515,6 +515,14 @@ class E2EEManagerSecretsMixin:
     async def _ensure_device_keys(self, user_id: str, device_ids: list[str]):
         """确保已获取指定设备的密钥"""
         try:
+            # 当本地 store 不可用时，仍尝试向服务器查询（不做本地缓存）
+            if not self._store:
+                await self.client.query_keys({user_id: []})
+                logger.debug(
+                    f"[E2EE-Secrets] 本地存储不可用，已尝试从服务器查询设备密钥：{user_id}"
+                )
+                return
+
             # 检查是否已有这些设备的密钥
             missing_devices = []
             for device_id in device_ids:

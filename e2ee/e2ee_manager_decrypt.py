@@ -7,7 +7,7 @@ from ..constants import MEGOLM_ALGO, OLM_ALGO
 
 class E2EEManagerDecryptMixin:
     async def decrypt_event(
-        self, event_content: dict, sender: str, room_id: str
+        self, event_content: dict, sender: str | None, room_id: str
     ) -> dict | None:
         """
         解密加密事件
@@ -121,7 +121,10 @@ class E2EEManagerDecryptMixin:
 
                 # 对于任何 Olm 解密失败，都尝试请求新会话
                 # 包括：未知一次性密钥、没有可用会话等情况
-                await self._request_new_session(sender_key, sender)
+                if sender:
+                    await self._request_new_session(sender_key, sender)
+                else:
+                    logger.warning("Olm 解密失败但缺少 sender_user_id，跳过请求新会话")
 
                 return None
 
@@ -184,12 +187,15 @@ class E2EEManagerDecryptMixin:
             (user_id, device_id) 元组，或 None
         """
         # 1. 首先从本地缓存查找
-        device_keys = self._store.get_all_device_keys()
-        for user_id, devices in device_keys.items():
-            for device_id, keys in devices.items():
-                device_curve_key = keys.get("keys", {}).get(f"curve25519:{device_id}")
-                if device_curve_key == sender_key:
-                    return (user_id, device_id)
+        if self._store:
+            device_keys = self._store.get_all_device_keys()
+            for user_id, devices in device_keys.items():
+                for device_id, keys in devices.items():
+                    device_curve_key = keys.get("keys", {}).get(
+                        f"curve25519:{device_id}"
+                    )
+                    if device_curve_key == sender_key:
+                        return (user_id, device_id)
 
         # 2. 如果本地没有，且知道发送者用户 ID，则从服务器查询
         if sender_user_id:

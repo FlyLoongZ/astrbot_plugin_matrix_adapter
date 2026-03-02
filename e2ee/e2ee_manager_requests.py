@@ -27,15 +27,32 @@ class E2EEManagerRequestsMixin:
         import secrets
 
         try:
+            if not sender_user_id:
+                logger.warning(
+                    f"缺少 sender_user_id，无法查询 sender_key {sender_key[:8]}... 对应设备"
+                )
+                return
+
             # 查找拥有这个 sender_key 的用户和设备
             result = await self._find_device_by_sender_key(sender_key, sender_user_id)
 
             if not result:
                 logger.warning(
                     f"无法找到 sender_key {sender_key[:8]}... 对应的设备，"
-                    "无法请求新会话"
+                    "将回退使用 sender_user_id 的任一设备建立会话"
                 )
-                return
+
+                # 回退：使用 sender_user_id 的任一设备尝试建立新会话
+                resp = await self.client.query_keys({sender_user_id: []})
+                devices = resp.get("device_keys", {}).get(sender_user_id, {})
+                if not devices:
+                    logger.warning(
+                        f"用户 {sender_user_id} 没有可用设备，无法请求新会话"
+                    )
+                    return
+
+                target_device = next(iter(devices.keys()))
+                result = (sender_user_id, target_device)
 
             target_user, target_device = result
             logger.info(f"尝试与 {target_user}/{target_device} 建立新的 Olm 会话")
