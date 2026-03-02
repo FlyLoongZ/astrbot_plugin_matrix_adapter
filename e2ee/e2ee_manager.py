@@ -346,7 +346,7 @@ class E2EEManager(
 
             # 如果启用密钥备份，创建或使用现有备份
             if self.enable_key_backup:
-                if not self._key_backup._backup_version:
+                if not self._key_backup.backup_version:
                     await self._key_backup.create_backup()
 
             # 仅当当前账户本地缺少房间密钥时才尝试恢复
@@ -355,7 +355,7 @@ class E2EEManager(
                 await self._key_backup.restore_room_keys_if_needed(reason="startup")
 
             # 自动签名自己的设备（使设备变为"已验证"状态）
-            if self._cross_signing._master_key:
+            if self._cross_signing.has_master_key:
                 await self._cross_signing.sign_device(self.device_id)
                 logger.info(f"已自动签名设备：{self._mask_device_id(self.device_id)}")
             else:

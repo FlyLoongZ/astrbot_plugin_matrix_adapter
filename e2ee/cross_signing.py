@@ -17,6 +17,38 @@ class CrossSigning:
     使用 vodozemac/ed25519 进行真正的签名操作
     """
 
+    @property
+    def has_master_key(self) -> bool:
+        return bool(self._master_key)
+
+    @property
+    def self_signing_key(self) -> str | None:
+        return self._self_signing_key
+
+    @property
+    def master_private_key(self) -> bytes | None:
+        return self._master_priv
+
+    @master_private_key.setter
+    def master_private_key(self, value: bytes | None) -> None:
+        self._master_priv = value
+
+    @property
+    def self_signing_private_key(self) -> bytes | None:
+        return self._self_signing_priv
+
+    @self_signing_private_key.setter
+    def self_signing_private_key(self, value: bytes | None) -> None:
+        self._self_signing_priv = value
+
+    @property
+    def user_signing_private_key(self) -> bytes | None:
+        return self._user_signing_priv
+
+    @user_signing_private_key.setter
+    def user_signing_private_key(self, value: bytes | None) -> None:
+        self._user_signing_priv = value
+
     _RECORD_CROSS_SIGNING = "cross_signing"
 
     def __init__(
@@ -325,27 +357,26 @@ class CrossSigning:
             self.user_id: {f"ed25519:{self._master_key}": sig_user}
         }
 
-        payload = {
-            "master_key": master_key,
-            "self_signing_key": self_signing_key,
-            "user_signing_key": user_signing_key,
-        }
-
         try:
-            await self.client._request(
-                "POST", "/_matrix/client/v3/keys/device_signing/upload", payload
+            await self.client.upload_signing_keys(
+                master_key=master_key,
+                self_signing_key=self_signing_key,
+                user_signing_key=user_signing_key,
             )
         except MatrixAPIError as e:
             auth_data = getattr(e, "data", {}) if isinstance(e.data, dict) else {}
             if self.password and auth_data.get("session"):
-                payload["auth"] = {
+                auth_payload = {
                     "type": "m.login.password",
                     "user": self.user_id,
                     "password": self.password,
                     "session": auth_data.get("session"),
                 }
-                await self.client._request(
-                    "POST", "/_matrix/client/v3/keys/device_signing/upload", payload
+                await self.client.upload_signing_keys(
+                    master_key=master_key,
+                    self_signing_key=self_signing_key,
+                    user_signing_key=user_signing_key,
+                    auth=auth_payload,
                 )
             else:
                 raise
@@ -381,11 +412,9 @@ class CrossSigning:
                 self.user_id: {f"ed25519:{self._self_signing_key}": sig}
             }
 
-            # /keys/signatures/upload 请求格式：{user_id: {device_id: device_keys}}
-            await self.client._request(
-                "POST",
-                "/_matrix/client/v3/keys/signatures/upload",
-                {self.user_id: {device_id: device_keys}},
+            # /keys/signatures/upload 请求格式：{"signatures": {user_id: {device_id: device_keys}}}
+            await self.client.upload_signatures(
+                signatures={self.user_id: {device_id: device_keys}}
             )
             logger.debug(f"[E2EE-CrossSign] 已签名设备：{device_id}")
         except MatrixAPIError as e:
@@ -416,10 +445,8 @@ class CrossSigning:
             return
         key_id = next(iter(keys))
 
-        # /keys/signatures/upload 请求格式：{user_id: {key_id: master_key}}
-        await self.client._request(
-            "POST",
-            "/_matrix/client/v3/keys/signatures/upload",
-            {target_user_id: {key_id: master_key}},
+        # /keys/signatures/upload 请求格式：{"signatures": {user_id: {key_id: master_key}}}
+        await self.client.upload_signatures(
+            signatures={target_user_id: {key_id: master_key}}
         )
         logger.debug(f"[E2EE-CrossSign] 已验证用户：{target_user_id}")

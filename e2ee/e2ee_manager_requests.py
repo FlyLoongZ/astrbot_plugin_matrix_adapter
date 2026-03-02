@@ -310,11 +310,11 @@ class E2EEManagerRequestsMixin:
             if (
                 not device_verified
                 and self._cross_signing
-                and self._cross_signing._self_signing_key
+                and self._cross_signing.self_signing_key
             ):
                 signatures = device_info.get("signatures", {}).get(sender, {})
                 # 检查是否有自签名密钥的签名（使用完整公钥作为 key ID）
-                self_signing_key_id = f"ed25519:{self._cross_signing._self_signing_key}"
+                self_signing_key_id = f"ed25519:{self._cross_signing.self_signing_key}"
                 if self_signing_key_id in signatures:
                     device_verified = True
                     logger.debug(f"设备 {requesting_device_id} 已通过交叉签名验证")

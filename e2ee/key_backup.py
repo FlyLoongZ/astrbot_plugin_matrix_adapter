@@ -25,6 +25,17 @@ class KeyBackup(KeyBackupSSSSMixin, KeyBackupBackupMixin):
     - 从备份恢复密钥
     """
 
+    @property
+    def backup_version(self) -> str | None:
+        return self._backup_version
+
+    @property
+    def recovery_key_bytes(self) -> bytes | None:
+        return self._recovery_key_bytes
+
+    def load_extracted_key(self) -> bytes | None:
+        return self._load_extracted_key()
+
     def __init__(
         self,
         client,

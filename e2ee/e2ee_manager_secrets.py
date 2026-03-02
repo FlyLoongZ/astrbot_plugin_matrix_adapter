@@ -129,9 +129,9 @@ class E2EEManagerSecretsMixin:
             if secret_name == SECRET_MEGOLM_BACKUP_V1:
                 # 获取备份密钥
                 if self._key_backup:
-                    key_bytes = self._key_backup._recovery_key_bytes
+                    key_bytes = self._key_backup.recovery_key_bytes
                     if not key_bytes:
-                        key_bytes = self._key_backup._load_extracted_key()
+                        key_bytes = self._key_backup.load_extracted_key()
                     if not key_bytes:
                         logger.debug("[E2EE-Secrets] 备份密钥不可用")
                         return None
@@ -141,10 +141,8 @@ class E2EEManagerSecretsMixin:
 
             elif secret_name == SECRET_CROSS_SIGNING_MASTER:
                 # 获取主交叉签名密钥
-                if self._cross_signing and hasattr(
-                    self._cross_signing, "_master_priv"
-                ):
-                    key = self._cross_signing._master_priv
+                if self._cross_signing and self._cross_signing.master_private_key is not None:
+                    key = self._cross_signing.master_private_key
                     if key:
                         return base64.b64encode(key).decode("utf-8")
                 logger.debug("[E2EE-Secrets] 主签名密钥不可用")
@@ -152,10 +150,8 @@ class E2EEManagerSecretsMixin:
 
             elif secret_name == SECRET_CROSS_SIGNING_SELF_SIGNING:
                 # 获取自签名密钥
-                if self._cross_signing and hasattr(
-                    self._cross_signing, "_self_signing_priv"
-                ):
-                    key = self._cross_signing._self_signing_priv
+                if self._cross_signing and self._cross_signing.self_signing_private_key is not None:
+                    key = self._cross_signing.self_signing_private_key
                     if key:
                         return base64.b64encode(key).decode("utf-8")
                 logger.debug("[E2EE-Secrets] 自签名密钥不可用")
@@ -163,10 +159,8 @@ class E2EEManagerSecretsMixin:
 
             elif secret_name == SECRET_CROSS_SIGNING_USER_SIGNING:
                 # 获取用户签名密钥
-                if self._cross_signing and hasattr(
-                    self._cross_signing, "_user_signing_priv"
-                ):
-                    key = self._cross_signing._user_signing_priv
+                if self._cross_signing and self._cross_signing.user_signing_private_key is not None:
+                    key = self._cross_signing.user_signing_private_key
                     if key:
                         return base64.b64encode(key).decode("utf-8")
                 logger.debug("[E2EE-Secrets] 用户签名密钥不可用")
@@ -425,17 +419,17 @@ class E2EEManagerSecretsMixin:
 
             elif secret_name == SECRET_CROSS_SIGNING_MASTER:
                 if self._cross_signing:
-                    self._cross_signing._master_priv = secret_bytes
+                    self._cross_signing.master_private_key = secret_bytes
                     logger.info("[E2EE-Secrets] 已保存接收到的主签名密钥")
 
             elif secret_name == SECRET_CROSS_SIGNING_SELF_SIGNING:
                 if self._cross_signing:
-                    self._cross_signing._self_signing_priv = secret_bytes
+                    self._cross_signing.self_signing_private_key = secret_bytes
                     logger.info("[E2EE-Secrets] 已保存接收到的自签名密钥")
 
             elif secret_name == SECRET_CROSS_SIGNING_USER_SIGNING:
                 if self._cross_signing:
-                    self._cross_signing._user_signing_priv = secret_bytes
+                    self._cross_signing.user_signing_private_key = secret_bytes
                     logger.info("[E2EE-Secrets] 已保存接收到的用户签名密钥")
 
             else:

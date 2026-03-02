@@ -51,7 +51,7 @@ class E2EEManagerVerificationMixin:
                 return
 
             verified_devices = set()
-            if self._cross_signing and self._cross_signing._master_key:
+            if self._cross_signing and self._cross_signing.has_master_key:
                 for device_id, keys in device_keys.items():
                     signatures = keys.get("signatures", {}).get(self.user_id, {})
                     for sig_key in signatures.keys():
