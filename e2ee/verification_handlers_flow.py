@@ -332,9 +332,12 @@ class SASVerificationFlowMixin:
 
                 # decimals 是一个包含 3 个数字的元组
                 decimals_tuple = sas_bytes_obj.decimals
-                decimals = (
-                    f"{decimals_tuple[0]} {decimals_tuple[1]} {decimals_tuple[2]}"
-                )
+                if len(decimals_tuple) >= 3:
+                    decimals = (
+                        f"{decimals_tuple[0]} {decimals_tuple[1]} {decimals_tuple[2]}"
+                    )
+                else:
+                    decimals = " ".join(map(str, decimals_tuple))
 
                 session["sas_bytes"] = emoji_indices  # 保存原始字节用于回退
                 session["sas_emojis"] = emojis

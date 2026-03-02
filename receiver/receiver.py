@@ -903,7 +903,7 @@ class MatrixReceiver:
         if event_type and event_type in ROOM_STATE_HANDLERS:
             handler = ROOM_STATE_HANDLERS[event_type]
             await handler(self, chain, event, event_type)
-            if chain.chain:
+            if chain.chain and chain.chain[0] is not None:
                 first_comp = chain.chain[0]
                 message.message_str = getattr(first_comp, "text", "")
             else:
