@@ -30,8 +30,13 @@ async def send_sticker(
             sticker_path_obj = Path(sticker_path)
             filename = sticker_path_obj.name
         except ValueError as e:
-            if "MXC URL" in str(e) and segment.url.startswith("mxc://"):
-                content_uri = segment.url
+            segment_url = getattr(segment, "url", None)
+            if (
+                "MXC URL" in str(e)
+                and isinstance(segment_url, str)
+                and segment_url.startswith("mxc://")
+            ):
+                content_uri = segment_url
             else:
                 raise
 

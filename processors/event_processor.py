@@ -315,7 +315,7 @@ class MatrixEventProcessor(MatrixEventProcessorStreams, MatrixEventProcessorMemb
         """
         from ..client.event_types import parse_event
 
-        event_type = event_data.get("type")
+        event_type = event_data.get("type", "")
         content = event_data.get("content", {})
         msgtype = content.get("msgtype", "")
 
@@ -764,7 +764,7 @@ class MatrixEventProcessor(MatrixEventProcessorStreams, MatrixEventProcessorMemb
                         )
                         logger.debug(f"解密 to_device 结果：{decrypted is not None}")
                         if decrypted:
-                            inner_type = decrypted.get("type")
+                            inner_type = decrypted.get("type", "")
                             inner_content = decrypted.get("content", decrypted)
                             logger.debug(f"解密后的事件类型：{inner_type}")
                             if inner_type == "m.room_key":
