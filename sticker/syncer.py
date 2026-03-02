@@ -225,7 +225,7 @@ class StickerPackSyncer:
                 # 使用 shortcode 作为标签
                 tags = [shortcode]
                 if room_id:
-                    tags.append(f"room:{room_id[:20]}")
+                    tags.append(f"room:{(room_id or '')[:20]}")
                 if is_user_pack:
                     tags.append("user")
 
@@ -257,7 +257,7 @@ class StickerPackSyncer:
             return state_key
 
         # 最后使用房间 ID 的简短形式
-        return f"room_{room_id[:8]}"
+        return f"room_{(room_id or '')[:8]}"
 
     async def get_room_sticker_packs(self, room_id: str) -> list[StickerPackInfo]:
         """

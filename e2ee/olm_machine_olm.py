@@ -85,6 +85,7 @@ class OlmMachineOlmMixin:
         recipient_ed25519_key: str = "unknown",
         event_type: str = "m.room_key",
     ) -> dict:
+        masked_identity_key = (their_identity_key or "")[:8]
         """
         使用 Olm 加密内容并添加 Matrix 协议外壳
 
@@ -106,9 +107,9 @@ class OlmMachineOlmMixin:
             if sessions:
                 session_index = len(sessions) - 1
                 session = sessions[session_index]
-                logger.debug(f"使用现有 Olm 会话对 {their_identity_key[:8]}... 加密")
+                logger.debug(f"使用现有 Olm 会话对 {masked_identity_key}... 加密")
             else:
-                logger.warning(f"没有可用于 {their_identity_key[:8]}... 的 Olm 会话")
+                logger.warning(f"没有可用于 {masked_identity_key}... 的 Olm 会话")
                 raise RuntimeError(f"没有可用于 {their_identity_key} 的 Olm 会话")
         else:
             sessions = self._olm_sessions.get(their_identity_key, [])
@@ -184,7 +185,10 @@ class OlmMachineOlmMixin:
         if not self._account:
             raise RuntimeError("Olm 账户未初始化")
 
-        logger.debug(f"开始 Olm 解密：sender={sender_key[:8]}... type={message_type}")
+        masked_sender_key = (sender_key or "")[:8]
+        logger.debug(
+            f"开始 Olm 解密：sender={masked_sender_key}... type={message_type}"
+        )
 
         # 将 base64 密文转换为 bytes，然后创建 AnyOlmMessage
         # Matrix 使用 unpadded base64，需要添加填充
@@ -220,7 +224,7 @@ class OlmMachineOlmMixin:
         # 如果 MAC 长度错误，清除该发送者的旧会话并等待新的 PreKey 消息
         if mac_length_error and sender_key in self._olm_sessions:
             logger.warning(
-                f"清除与 {sender_key[:8]}... 的旧 Olm 会话（MAC 格式不兼容）"
+                f"清除与 {masked_sender_key}... 的旧 Olm 会话（MAC 格式不兼容）"
             )
             self._olm_sessions[sender_key] = []
             # 同时清除存储中的会话
@@ -228,7 +232,7 @@ class OlmMachineOlmMixin:
 
         # 如果是 prekey 消息，创建新的入站会话
         if message_type == 0:
-            logger.info(f"收到 PreKey 消息，尝试从 {sender_key[:8]}... 创建入站会话")
+            logger.info(f"收到 PreKey 消息，尝试从 {masked_sender_key}... 创建入站会话")
 
             # 调试：显示当前账户中的一次性密钥信息
             try:
@@ -253,7 +257,9 @@ class OlmMachineOlmMixin:
                         if hasattr(message, "one_time_key")
                         else "未知"
                     )
-                    logger.debug(f"PreKey 消息中使用的一次性密钥：{otk_used[:16]}...")
+                    logger.debug(
+                        f"PreKey 消息中使用的一次性密钥：{(otk_used or '')[:16]}..."
+                    )
                 except Exception:
                     pass
 
@@ -291,7 +297,7 @@ class OlmMachineOlmMixin:
         # 普通消息（type=1）但没有可用的会话
         if message_type == 1:
             logger.warning(
-                f"收到普通 Olm 消息但没有可用的会话：sender={sender_key[:8]}... "
+                f"收到普通 Olm 消息但没有可用的会话：sender={masked_sender_key}... "
                 "可能原因：对方认为已有会话，但本端没有。需要请求新会话。"
             )
 

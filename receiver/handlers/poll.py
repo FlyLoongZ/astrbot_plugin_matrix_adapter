@@ -35,7 +35,7 @@ async def handle_poll_response(receiver, chain, event, _: str):
         text = "[Poll Response] (no selection)"
 
     if poll_start_id:
-        text += f" (responding to {poll_start_id[:16]}...)"
+        text += f" (responding to {(poll_start_id or '')[:16]}...)"
 
     chain.chain.append(Plain(text))
 
@@ -68,6 +68,6 @@ async def handle_poll_end(receiver, chain, event, _: str):
         text = "[Poll Ended]"
 
     if poll_start_id:
-        text += f" (poll: {poll_start_id[:16]}...)"
+        text += f" (poll: {(poll_start_id or '')[:16]}...)"
 
     chain.chain.append(Plain(text))

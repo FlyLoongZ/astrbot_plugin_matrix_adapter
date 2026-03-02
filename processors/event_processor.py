@@ -812,7 +812,8 @@ class MatrixEventProcessor(MatrixEventProcessorStreams, MatrixEventProcessorMemb
                         # 直接处理转发的密钥（格式与 m.room_key 相同）
                         await self.e2ee_manager.handle_room_key(content, sender_key)
                         logger.debug(
-                            f"成功处理转发的房间密钥：{content.get('session_id', '')[:8]}..."
+                            "成功处理转发的房间密钥："
+                            f"{(content.get('session_id') or '')[:8]}..."
                         )
                     except Exception as e:
                         logger.error(f"处理 m.forwarded_room_key 事件失败：{e}")
@@ -841,7 +842,7 @@ class MatrixEventProcessor(MatrixEventProcessorStreams, MatrixEventProcessorMemb
 
                             logger.debug(
                                 f"收到密钥请求：来自设备 {requesting_device_id}，"
-                                f"room={room_id[:16]}..., session={session_id[:8]}..."
+                                f"room={(room_id or '')[:16]}..., session={(session_id or '')[:8]}..."
                             )
 
                             # 调用 E2EE 管理器响应密钥请求

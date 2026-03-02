@@ -183,7 +183,7 @@ class SASVerificationSendRoomMixin:
         )
 
         logger.debug(
-            f"[E2EE-Verify] Commitment: public_key={our_public_key[:16]}..., "
+            f"[E2EE-Verify] Commitment: public_key={(our_public_key or '')[:16]}..., "
             f"has_m.relates_to={'m.relates_to' in start_content}"
         )
 
@@ -200,7 +200,7 @@ class SASVerificationSendRoomMixin:
             room_id, M_KEY_VERIFICATION_ACCEPT, content, transaction_id
         )
         logger.info(
-            f"[E2EE-Verify] 已发送房间内 accept (commitment: {commitment[:16]}...)"
+            f"[E2EE-Verify] 已发送房间内 accept (commitment: {(commitment or '')[:16]}...)"
         )
 
     async def _send_in_room_key(self, room_id: str, transaction_id: str):

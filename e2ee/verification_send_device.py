@@ -211,7 +211,9 @@ class SASVerificationSendDeviceMixin:
         await self._send_to_device(
             M_KEY_VERIFICATION_ACCEPT, to_user, to_device, content
         )
-        logger.info(f"[E2EE-Verify] 已发送 accept (commitment: {commitment[:16]}...)")
+        logger.info(
+            f"[E2EE-Verify] 已发送 accept (commitment: {(commitment or '')[:16]}...)"
+        )
 
     async def _send_key(self, to_user: str, to_device: str, transaction_id: str):
         """发送公钥"""
@@ -235,7 +237,7 @@ class SASVerificationSendDeviceMixin:
         }
 
         await self._send_to_device(M_KEY_VERIFICATION_KEY, to_user, to_device, content)
-        logger.info(f"[E2EE-Verify] 已发送 key: {our_public_key[:20]}...")
+        logger.info(f"[E2EE-Verify] 已发送 key: {(our_public_key or '')[:20]}...")
 
     async def _send_mac(
         self, to_user: str, to_device: str, transaction_id: str, session: dict

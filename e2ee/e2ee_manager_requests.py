@@ -26,10 +26,13 @@ class E2EEManagerRequestsMixin:
         """
         import secrets
 
+        result: tuple[str, str] | None = None
+        masked_sender_key = (sender_key or "")[:8]
+
         try:
             if not sender_user_id:
                 logger.warning(
-                    f"缺少 sender_user_id，无法查询 sender_key {sender_key[:8]}... 对应设备"
+                    f"缺少 sender_user_id，无法查询 sender_key {masked_sender_key}... 对应设备"
                 )
                 return
 
@@ -38,7 +41,7 @@ class E2EEManagerRequestsMixin:
 
             if not result:
                 logger.warning(
-                    f"无法找到 sender_key {sender_key[:8]}... 对应的设备，"
+                    f"无法找到 sender_key {masked_sender_key}... 对应的设备，"
                     "将回退使用 sender_user_id 的任一设备建立会话"
                 )
 
@@ -205,7 +208,7 @@ class E2EEManagerRequestsMixin:
         room_id: str,
         session_id: str,
         sender_key: str | None,
-        sender_user_id: str,
+        sender_user_id: str | None,
     ):
         """
         发送 m.room_key_request 请求密钥
@@ -214,7 +217,7 @@ class E2EEManagerRequestsMixin:
             room_id: 房间 ID
             session_id: 会话 ID
             sender_key: 发送者的 curve25519 密钥
-            sender_user_id: 发送者用户 ID
+            sender_user_id: 发送者用户 ID（可能为空）
         """
         import secrets
 
@@ -252,7 +255,7 @@ class E2EEManagerRequestsMixin:
                 )
 
             logger.info(
-                f"已发送密钥请求：room={room_id[:16]}... session={session_id[:8]}..."
+                f"已发送密钥请求：room={(room_id or '')[:16]}... session={(session_id or '')[:8]}..."
             )
 
         except Exception as e:
@@ -346,21 +349,21 @@ class E2EEManagerRequestsMixin:
             if not device_verified:
                 logger.warning(
                     f"拒绝向未验证的设备 {requesting_device_id} 转发密钥 "
-                    f"(session={session_id[:8]}...)"
+                    f"(session={(session_id or '')[:8]}...)"
                 )
                 return
 
             # 获取请求的 Megolm 会话
             session = self._olm.get_megolm_inbound_session(session_id)
             if not session:
-                logger.debug(f"没有请求的会话：session={session_id[:8]}...")
+                logger.debug(f"没有请求的会话：session={(session_id or '')[:8]}...")
                 return
 
             # 导出会话密钥
             try:
                 exported_key = session.export_at_first_known_index()
                 logger.info(
-                    f"导出会话密钥：session={session_id[:8]}..., "
+                    f"导出会话密钥：session={(session_id or '')[:8]}..., "
                     f"first_index={session.first_known_index}"
                 )
             except Exception as e:
@@ -397,7 +400,7 @@ class E2EEManagerRequestsMixin:
             )
 
             logger.info(
-                f"已加密转发密钥：session={session_id[:8]}... -> device={requesting_device_id}"
+                f"已加密转发密钥：session={(session_id or '')[:8]}... -> device={requesting_device_id}"
             )
 
         except Exception as e:

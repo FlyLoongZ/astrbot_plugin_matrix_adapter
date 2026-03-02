@@ -356,7 +356,7 @@ class E2EEManagerSecretsMixin:
         secret = content.get("secret", "")
 
         logger.info(
-            f"[E2EE-Secrets] 收到秘密：request_id={request_id[:8]}... "
+            f"[E2EE-Secrets] 收到秘密：request_id={(request_id or '')[:8]}... "
             f"secret_len={len(secret)}"
         )
 

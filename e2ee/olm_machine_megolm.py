@@ -59,7 +59,7 @@ class OlmMachineMegolmMixin:
                 self.store.save_megolm_inbound(
                     session_id, session.pickle(self._pickle_key)
                 )
-                logger.debug(f"添加 Megolm 入站会话成功：{session_id[:8]}...")
+                logger.debug(f"添加 Megolm 入站会话成功：{(session_id or '')[:8]}...")
             else:
                 # vodozemac SessionKey object (from m.room_key events)
                 session = InboundGroupSession(session_key)
@@ -96,7 +96,7 @@ class OlmMachineMegolmMixin:
                     return None
 
         if not session:
-            logger.warning(f"未找到 Megolm 会话：{session_id[:8]}...")
+            logger.warning(f"未找到 Megolm 会话：{(session_id or '')[:8]}...")
             return None
 
         try:
@@ -165,7 +165,7 @@ class OlmMachineMegolmMixin:
             self.store.save_megolm_inbound(
                 session_id, inbound_session.pickle(self._pickle_key)
             )
-            logger.debug(f"为自己创建了入站会话：{session_id[:8]}...")
+            logger.debug(f"为自己创建了入站会话：{(session_id or '')[:8]}...")
         except Exception as e:
             logger.warning(f"创建自己的入站会话失败：{e}")
 
@@ -219,7 +219,7 @@ class OlmMachineMegolmMixin:
                             session_id, inbound_session.pickle(self._pickle_key)
                         )
                         logger.info(
-                            f"为出站会话重新创建了入站会话：{session_id[:8]}..."
+                            f"为出站会话重新创建了入站会话：{(session_id or '')[:8]}..."
                         )
                     except Exception as e:
                         logger.warning(f"重新创建入站会话失败：{e}")
@@ -264,7 +264,9 @@ class OlmMachineMegolmMixin:
                     self.store.save_megolm_inbound(
                         session_id, inbound_session.pickle(self._pickle_key)
                     )
-                    logger.info(f"为出站会话创建了入站会话：{session_id[:8]}...")
+                    logger.info(
+                        f"为出站会话创建了入站会话：{(session_id or '')[:8]}..."
+                    )
                 except Exception as e:
                     logger.warning(f"创建入站会话失败：{e}")
 

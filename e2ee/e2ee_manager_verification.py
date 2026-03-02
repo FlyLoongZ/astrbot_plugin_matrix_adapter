@@ -108,4 +108,6 @@ class E2EEManagerVerificationMixin:
                 txn_id, self.user_id, target_device_id
             )
 
-        logger.info(f"已向设备 {target_device_id} 发起验证请求 (txn={txn_id[:8]}...)")
+        logger.info(
+            f"已向设备 {target_device_id} 发起验证请求 (txn={(txn_id or '')[:8]}...)"
+        )

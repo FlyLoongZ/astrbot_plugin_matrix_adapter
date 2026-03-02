@@ -30,6 +30,7 @@ class E2EEManagerDecryptMixin:
             session_id = event_content.get("session_id")
             ciphertext = event_content.get("ciphertext")
             sender_key = event_content.get("sender_key")
+            masked_session_id = (session_id or "")[:8]
 
             if not session_id or not ciphertext:
                 logger.warning("缺少 session_id 或 ciphertext")
@@ -37,11 +38,11 @@ class E2EEManagerDecryptMixin:
 
             decrypted = self._olm.decrypt_megolm(session_id, ciphertext)
             if decrypted:
-                logger.debug(f"成功解密 Megolm 消息 (session: {session_id[:8]}...)")
+                logger.debug(f"成功解密 Megolm 消息 (session: {masked_session_id}...)")
                 return decrypted
 
             # 解密失败，尝试请求密钥
-            logger.info(f"尝试请求房间密钥：session={session_id[:8]}...")
+            logger.info(f"尝试请求房间密钥：session={masked_session_id}...")
 
             # 1. 仅在本账户缺失密钥时尝试从服务器备份恢复
             if self._key_backup and self._key_backup.should_restore_for_session(
@@ -54,7 +55,7 @@ class E2EEManagerDecryptMixin:
                 # 再次尝试解密
                 decrypted = self._olm.decrypt_megolm(session_id, ciphertext)
                 if decrypted:
-                    logger.info(f"从备份恢复后成功解密：{session_id[:8]}...")
+                    logger.info(f"从备份恢复后成功解密：{masked_session_id}...")
                     return decrypted
 
             # 2. 发送 m.room_key_request
@@ -68,17 +69,20 @@ class E2EEManagerDecryptMixin:
             ciphertext_data = event_content.get("ciphertext", {})
 
             # Debug log
+            masked_sender_key = (sender_key or "")[:8]
             logger.debug(
-                f"尝试解密 Olm 消息：algorithm={algorithm} sender_key={sender_key[:8]}..."
+                f"尝试解密 Olm 消息：algorithm={algorithm} sender_key={masked_sender_key}..."
             )
 
             # 找到发给本设备的密文
             my_key = self._olm.curve25519_key
             if my_key not in ciphertext_data:
                 target_keys = list(ciphertext_data.keys())
+                masked_my_key = (my_key or "")[:16]
+                masked_target_keys = [((k or "")[:16] + "...") for k in target_keys]
                 logger.warning(
-                    f"消息不是发给本设备的：本设备密钥={my_key[:16]}... "
-                    f"目标密钥={[k[:16] + '...' for k in target_keys]}"
+                    f"消息不是发给本设备的：本设备密钥={masked_my_key}... "
+                    f"目标密钥={masked_target_keys}"
                 )
                 return None
 
@@ -224,7 +228,7 @@ class E2EEManagerDecryptMixin:
                         return (sender_user_id, device_id)
 
                 logger.warning(
-                    f"服务器返回的设备中没有匹配的 sender_key：{sender_key[:8]}..."
+                    f"服务器返回的设备中没有匹配的 sender_key：{(sender_key or '')[:8]}..."
                 )
             except Exception as e:
                 logger.warning(f"从服务器查询设备密钥失败：{e}")

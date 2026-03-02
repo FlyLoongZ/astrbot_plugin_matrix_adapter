@@ -365,7 +365,9 @@ class KeyBackupBackupMixin:
                         mac_b64 = encrypted_data.get("mac", "")
 
                         if not ciphertext_b64:
-                            logger.warning(f"会话 {session_id[:8]}... 无 ciphertext")
+                            logger.warning(
+                                f"会话 {(session_id or '')[:8]}... 无 ciphertext"
+                            )
                             skipped += 1
                             continue
 
@@ -422,7 +424,7 @@ class KeyBackupBackupMixin:
                             restored += 1
 
                     except Exception as e:
-                        logger.debug(f"恢复会话 {session_id[:8]}... 失败：{e}")
+                        logger.debug(f"恢复会话 {(session_id or '')[:8]}... 失败：{e}")
                         skipped += 1
 
             if restored > 0:

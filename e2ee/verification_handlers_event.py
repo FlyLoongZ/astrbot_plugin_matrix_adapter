@@ -97,7 +97,8 @@ class SASVerificationEventMixin:
                     ):
                         transaction_id = txn_id
                         logger.debug(
-                            f"[E2EE-Verify] 从活跃会话推断 transaction_id: {txn_id[:16]}..."
+                            "[E2EE-Verify] 从活跃会话推断 transaction_id: "
+                            f"{(txn_id or '')[:16]}..."
                         )
                         break
 
@@ -110,7 +111,7 @@ class SASVerificationEventMixin:
 
         logger.debug(
             f"[E2EE-Verify] 收到房间内验证事件：{event_type} "
-            f"from={sender} room={room_id[:16]}... txn={transaction_id[:16]}..."
+            f"from={sender} room={(room_id or '')[:16]}... txn={(transaction_id or '')[:16]}..."
         )
 
         # Store room_id in session for in-room responses
@@ -152,7 +153,8 @@ class SASVerificationEventMixin:
                     M_KEY_VERIFICATION_CANCEL,
                 ):
                     logger.info(
-                        f"[E2EE-Verify] 检测到其他设备 {from_device} 正在处理验证 txn={transaction_id[:8]}...，本设备将静默退出"
+                        "[E2EE-Verify] 检测到其他设备 "
+                        f"{from_device} 正在处理验证 txn={(transaction_id or '')[:8]}...，本设备将静默退出"
                     )
                     # 标记会话为已由其他设备处理，停止本地处理
                     if transaction_id in self._sessions:
@@ -206,7 +208,9 @@ class SASVerificationEventMixin:
             try:
                 sas = Sas()
                 pub = sas.public_key.to_base64()
-                logger.debug(f"[E2EE-Verify] 创建 SAS 实例，公钥：{pub[:16]}...")
+                logger.debug(
+                    f"[E2EE-Verify] 创建 SAS 实例，公钥：{(pub or '')[:16]}..."
+                )
             except Exception as e:
                 logger.warning(f"[E2EE-Verify] 创建 SAS 实例失败：{e}")
 
@@ -244,7 +248,8 @@ class SASVerificationEventMixin:
                 logger.info(f"[E2EE-Verify] Trusted device {sender}|{from_device}")
             else:
                 logger.info(
-                    f"[E2EE-Verify] Untrusted device {sender}|{from_device} (fingerprint: {fingerprint[:8]}...)"
+                    "[E2EE-Verify] Untrusted device "
+                    f"{sender}|{from_device} (fingerprint: {(fingerprint or '')[:8]}...)"
                 )
 
                 # Notify user
