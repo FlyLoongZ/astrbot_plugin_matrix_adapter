@@ -31,8 +31,8 @@ class SASVerificationDisplayMixin:
         if decimals:
             lines.append(f"数字：{decimals}")
         lines.append(f"事务：{transaction_id}")
-        if device_id:
-            lines.append(f"使用命令：/admin verify {device_id}")
+        if sender and device_id:
+            lines.append(f"使用命令：/approve_device {sender} {device_id}")
 
         message = "\n".join(lines)
         try:

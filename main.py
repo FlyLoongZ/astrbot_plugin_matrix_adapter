@@ -71,11 +71,6 @@ class MatrixPlugin(Star):
         示例：
             /approve_device @user:example.com DEVICEID123
         """
-        # Check if this is a Matrix event
-        if str(event.get_platform_name() or "").strip().lower() != "matrix":
-            yield event.plain_result("此命令仅在 Matrix 平台可用")
-            return
-
         # Access E2EE Manager from the adapter
         e2ee_manager = None
         try:
@@ -139,12 +134,46 @@ class MatrixPlugin(Star):
             # Add to trusted devices
             device_store.add_device(user_id, device_id, fingerprint)
 
-            yield event.plain_result(
-                f"✅ 设备已批准:\n"
-                f"用户：{user_id}\n"
-                f"设备：{device_id}\n"
-                f"指纹：{fingerprint}"
-            )
+            # If there is an active SAS verification session, continue protocol flow
+            approve_result = None
+            approve_method = getattr(verification, "approve_device", None)
+            if callable(approve_method):
+                try:
+                    approve_result = await approve_method(device_id)
+                except Exception as approve_error:
+                    logger.warning(f"触发验证会话确认失败：{approve_error}")
+
+            if (
+                isinstance(approve_result, tuple)
+                and len(approve_result) == 2
+                and isinstance(approve_result[0], bool)
+            ):
+                session_ok, session_msg = approve_result
+                if session_ok:
+                    result_text = (
+                        f"✅ 设备已批准并已发送验证确认:\n"
+                        f"用户：{user_id}\n"
+                        f"设备：{device_id}\n"
+                        f"指纹：{fingerprint}\n"
+                        f"会话：{session_msg}"
+                    )
+                else:
+                    result_text = (
+                        f"✅ 设备已批准:\n"
+                        f"用户：{user_id}\n"
+                        f"设备：{device_id}\n"
+                        f"指纹：{fingerprint}\n"
+                        f"会话：{session_msg}"
+                    )
+            else:
+                result_text = (
+                    f"✅ 设备已批准:\n"
+                    f"用户：{user_id}\n"
+                    f"设备：{device_id}\n"
+                    f"指纹：{fingerprint}"
+                )
+
+            yield event.plain_result(result_text)
             logger.info(f"通过命令手动批准设备 {user_id}|{device_id}")
 
         except Exception as e:

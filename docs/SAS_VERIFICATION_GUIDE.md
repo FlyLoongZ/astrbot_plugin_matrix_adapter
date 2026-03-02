@@ -24,7 +24,7 @@ SAS（Short Authentication String）是 Matrix 端到端加密中用于验证设
 |------|------|---------|
 | `auto_accept` | 自动接受所有验证请求 | 个人使用、受信任环境 |
 | `auto_reject` | 自动拒绝所有验证请求 | 高安全需求、不需要验证 |
-| `manual` | 记录请求但不自动响应 | 需要人工审核 |
+| `manual` | 手动审核模式：自动完成验证握手，最终确认由管理员触发 | 需要人工审核 |
 
 ### 首次使用信任 (`matrix_e2ee_trust_on_first_use`)
 
@@ -68,8 +68,8 @@ SAS（Short Authentication String）是 Matrix 端到端加密中用于验证设
    - 验证完成
 
    **如果配置为 `manual`：**
-   - 机器人会记录验证请求但不响应
-   - 需要管理员手动处理（可使用 /admin verify <device_id> 进行确认）
+   - 机器人会记录验证请求并自动完成 ready/accept/key 握手
+   - 需要管理员手动处理（可使用 /approve_device <user_id> <device_id> 进行确认）
    - 建议使用 `auto_accept` 模式
 
    **如果配置为 `auto_reject`：**
@@ -171,7 +171,7 @@ Matrix 支持两种验证方式：
    ```bash
    pip install vodozemac
    ```
-3. 将 `matrix_e2ee_auto_verify` 设置为 `auto_accept`
+3. 若使用 `manual` 模式，请在握手后执行 `/approve_device <user_id> <device_id>` 完成确认；若不需要人工确认可切换到 `auto_accept`
 
 ### Q: Emoji 不匹配怎么办？
 
@@ -234,7 +234,7 @@ Matrix 支持两种验证方式：
 
 1. **生产环境**：建议使用 `auto_accept` + `trust_on_first_use: false`
 2. **个人使用**：可以使用 `auto_accept` + `trust_on_first_use: true`
-3. **高安全需求**：等待未来版本支持 `manual` 模式的手动确认功能
+3. **高安全需求**：使用 `manual` 模式，并在核对 SAS 后执行 `/approve_device <user_id> <device_id>` 完成确认
 
 ## 配置示例
 

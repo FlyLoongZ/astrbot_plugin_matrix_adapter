@@ -160,7 +160,7 @@ class SASVerificationFlowMixin:
         is_in_room = session.get("is_in_room", False)
         room_id = session.get("room_id")
 
-        if self.auto_verify_mode == "auto_accept":
+        if self.auto_verify_mode in ("auto_accept", "manual"):
             if from_device:
                 if is_in_room and room_id:
                     await self._send_in_room_accept(room_id, transaction_id, content)
@@ -190,7 +190,7 @@ class SASVerificationFlowMixin:
         session["mac"] = mac
         session["sas_methods"] = sas_methods
 
-        if self.auto_verify_mode == "auto_accept":
+        if self.auto_verify_mode in ("auto_accept", "manual"):
             # Check if this is an in-room verification
             is_in_room = session.get("is_in_room", False)
             room_id = session.get("room_id")
@@ -273,7 +273,7 @@ class SASVerificationFlowMixin:
 
         # 如果我们还没发送自己的公钥，先发送
         if not session.get("key_sent"):
-            if self.auto_verify_mode == "auto_accept":
+            if self.auto_verify_mode in ("auto_accept", "manual"):
                 if is_in_room and room_id:
                     await self._send_in_room_key(room_id, transaction_id)
                 else:

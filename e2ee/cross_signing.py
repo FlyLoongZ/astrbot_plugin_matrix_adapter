@@ -407,12 +407,21 @@ class CrossSigning:
                 logger.debug("[E2EE-CrossSign] 未找到设备密钥，无法签名")
                 return
 
+            # Matrix 要求 signatures 的 key 使用 signing key 的 key_id。
+            # 当前实现中 self-signing key id 即 ed25519:<self_signing_pubkey>。
+            signing_key_id = f"ed25519:{self._self_signing_key}"
             sig = self._sign(self._self_signing_priv, device_keys)
-            device_keys["signatures"] = {
-                self.user_id: {f"ed25519:{self._self_signing_key}": sig}
-            }
+            existing_signatures = device_keys.get("signatures")
+            if not isinstance(existing_signatures, dict):
+                existing_signatures = {}
+            user_signatures = existing_signatures.get(self.user_id)
+            if not isinstance(user_signatures, dict):
+                user_signatures = {}
+            user_signatures[signing_key_id] = sig
+            existing_signatures[self.user_id] = user_signatures
+            device_keys["signatures"] = existing_signatures
 
-            # /keys/signatures/upload 请求格式：{"signatures": {user_id: {device_id: device_keys}}}
+            # /keys/signatures/upload body 为 {user_id: {device_id: signed_object}}
             await self.client.upload_signatures(
                 signatures={self.user_id: {device_id: device_keys}}
             )
@@ -433,10 +442,17 @@ class CrossSigning:
             logger.debug("[E2EE-CrossSign] 未找到目标用户 master key")
             return
 
+        signing_key_id = f"ed25519:{self._user_signing_key}"
         sig = self._sign(self._user_signing_priv, master_key)
-        master_key["signatures"] = {
-            self.user_id: {f"ed25519:{self._user_signing_key}": sig}
-        }
+        existing_signatures = master_key.get("signatures")
+        if not isinstance(existing_signatures, dict):
+            existing_signatures = {}
+        user_signatures = existing_signatures.get(self.user_id)
+        if not isinstance(user_signatures, dict):
+            user_signatures = {}
+        user_signatures[signing_key_id] = sig
+        existing_signatures[self.user_id] = user_signatures
+        master_key["signatures"] = existing_signatures
 
         # 获取 master key 的 key ID
         keys = master_key.get("keys", {})

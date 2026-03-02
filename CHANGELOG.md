@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+- 修复之前重构破坏的 E2EE 内部属性
+- 修改手动批准 accept device 工作方式，先接受握手再控制是否接受 SAS 验证码 (但是似乎密钥交换依旧懒惰)
+
 ## 0.3.3
 
 - 修复 _HashingFileReader 与 IOBase 的兼容性

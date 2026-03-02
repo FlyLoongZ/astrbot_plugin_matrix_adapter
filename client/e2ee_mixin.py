@@ -93,13 +93,15 @@ class E2EEMixin:
         Upload signatures for device and cross-signing keys
 
         Args:
-            signatures: Signatures dict
+            signatures: Signed objects dict, keyed by user_id
 
         Returns:
             Response with failures
         """
         endpoint = "/_matrix/client/v3/keys/signatures/upload"
-        return await self._request("POST", endpoint, data={"signatures": signatures})
+        # Matrix spec requires request body to be user_id-keyed object map directly,
+        # not wrapped in an additional "signatures" field.
+        return await self._request("POST", endpoint, data=signatures)
 
     async def upload_signing_keys(
         self,

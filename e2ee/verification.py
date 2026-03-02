@@ -122,6 +122,7 @@ class SASVerification(
                     await self._send_in_room_done(room_id, txn_id)
                 else:
                     await self._send_done(sender, target_device, txn_id)
+            session["state"] = "done"
         except Exception as e:
             return False, f"发送验证消息失败：{e}"
 
