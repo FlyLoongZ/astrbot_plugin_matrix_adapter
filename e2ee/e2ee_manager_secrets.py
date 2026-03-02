@@ -142,9 +142,9 @@ class E2EEManagerSecretsMixin:
             elif secret_name == SECRET_CROSS_SIGNING_MASTER:
                 # 获取主交叉签名密钥
                 if self._cross_signing and hasattr(
-                    self._cross_signing, "_master_private_key"
+                    self._cross_signing, "_master_priv"
                 ):
-                    key = self._cross_signing._master_private_key
+                    key = self._cross_signing._master_priv
                     if key:
                         return base64.b64encode(key).decode("utf-8")
                 logger.debug("[E2EE-Secrets] 主签名密钥不可用")
@@ -153,9 +153,9 @@ class E2EEManagerSecretsMixin:
             elif secret_name == SECRET_CROSS_SIGNING_SELF_SIGNING:
                 # 获取自签名密钥
                 if self._cross_signing and hasattr(
-                    self._cross_signing, "_self_signing_private_key"
+                    self._cross_signing, "_self_signing_priv"
                 ):
-                    key = self._cross_signing._self_signing_private_key
+                    key = self._cross_signing._self_signing_priv
                     if key:
                         return base64.b64encode(key).decode("utf-8")
                 logger.debug("[E2EE-Secrets] 自签名密钥不可用")
@@ -164,9 +164,9 @@ class E2EEManagerSecretsMixin:
             elif secret_name == SECRET_CROSS_SIGNING_USER_SIGNING:
                 # 获取用户签名密钥
                 if self._cross_signing and hasattr(
-                    self._cross_signing, "_user_signing_private_key"
+                    self._cross_signing, "_user_signing_priv"
                 ):
-                    key = self._cross_signing._user_signing_private_key
+                    key = self._cross_signing._user_signing_priv
                     if key:
                         return base64.b64encode(key).decode("utf-8")
                 logger.debug("[E2EE-Secrets] 用户签名密钥不可用")
@@ -425,17 +425,17 @@ class E2EEManagerSecretsMixin:
 
             elif secret_name == SECRET_CROSS_SIGNING_MASTER:
                 if self._cross_signing:
-                    self._cross_signing._master_private_key = secret_bytes
+                    self._cross_signing._master_priv = secret_bytes
                     logger.info("[E2EE-Secrets] 已保存接收到的主签名密钥")
 
             elif secret_name == SECRET_CROSS_SIGNING_SELF_SIGNING:
                 if self._cross_signing:
-                    self._cross_signing._self_signing_private_key = secret_bytes
+                    self._cross_signing._self_signing_priv = secret_bytes
                     logger.info("[E2EE-Secrets] 已保存接收到的自签名密钥")
 
             elif secret_name == SECRET_CROSS_SIGNING_USER_SIGNING:
                 if self._cross_signing:
-                    self._cross_signing._user_signing_private_key = secret_bytes
+                    self._cross_signing._user_signing_priv = secret_bytes
                     logger.info("[E2EE-Secrets] 已保存接收到的用户签名密钥")
 
             else:
@@ -502,7 +502,7 @@ class E2EEManagerSecretsMixin:
     async def _get_own_devices(self) -> list[str]:
         """获取自己的所有设备 ID"""
         try:
-            response = await self.client.query_keys([self.user_id])
+            response = await self.client.query_keys({self.user_id: []})
             device_keys = response.get("device_keys", {}).get(self.user_id, {})
             return list(device_keys.keys())
         except Exception as e:
@@ -520,7 +520,12 @@ class E2EEManagerSecretsMixin:
 
             if missing_devices:
                 # 查询缺失的设备密钥
-                await self.client.query_keys([user_id])
+                response = await self.client.query_keys({user_id: []})
+                device_keys = response.get("device_keys", {}).get(user_id, {})
+                for device_id in missing_devices:
+                    device_info = device_keys.get(device_id)
+                    if device_info:
+                        self._store.save_device_keys(user_id, device_id, device_info)
                 logger.debug(
                     f"[E2EE-Secrets] 已查询设备密钥：{user_id}/{missing_devices}"
                 )

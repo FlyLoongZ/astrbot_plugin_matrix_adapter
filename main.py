@@ -102,13 +102,19 @@ class MatrixPlugin(Star):
             yield event.plain_result("端到端加密未启用或不可用")
             return
 
-        if not getattr(e2ee_manager, "_verification", None):
+        verification = getattr(e2ee_manager, "_verification", None)
+        if not verification:
             yield event.plain_result("验证模块未初始化")
+            return
+
+        device_store = getattr(verification, "device_store", None)
+        if not device_store:
+            yield event.plain_result("验证设备存储未初始化")
             return
 
         try:
             # Query device keys to get the fingerprint
-            client = e2ee_manager._client
+            client = e2ee_manager.client
             response = await client.query_keys({user_id: []})
 
             devices = response.get("device_keys", {}).get(user_id, {})
@@ -131,9 +137,7 @@ class MatrixPlugin(Star):
                 return
 
             # Add to trusted devices
-            e2ee_manager._verification.device_store.add_device(
-                user_id, device_id, fingerprint
-            )
+            device_store.add_device(user_id, device_id, fingerprint)
 
             yield event.plain_result(
                 f"✅ 设备已批准:\n"
