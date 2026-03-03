@@ -69,7 +69,7 @@ SAS（Short Authentication String）是 Matrix 端到端加密中用于验证设
 
    **如果配置为 `manual`：**
    - 机器人会记录验证请求并自动完成 ready/accept/key 握手
-   - 需要管理员手动处理（可使用 /approve_device <user_id> <device_id> 进行确认）
+   - 需要管理员手动处理（可使用 /approve_device <user_id> <device_id> [matrix_platform_id] 进行确认；WebChat 且存在多个 Matrix 适配器时需指定）
    - 建议使用 `auto_accept` 模式
 
    **如果配置为 `auto_reject`：**

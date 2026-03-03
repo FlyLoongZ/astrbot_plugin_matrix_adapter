@@ -278,8 +278,31 @@ class MatrixUtils:
         return []
 
     @staticmethod
-    def get_matrix_platform(context, platform_id: str = ""):
-        """获取 Matrix 平台实例，优先匹配 platform_id，失败则回退第一个。"""
+    def list_matrix_platform_ids(context) -> list[str]:
+        """列出所有 Matrix 适配器平台 ID。"""
+        platform_ids: list[str] = []
+        try:
+            for platform in MatrixUtils.iter_platform_instances(context):
+                try:
+                    meta = platform.meta()
+                except Exception:
+                    continue
+
+                meta_name = str(getattr(meta, "name", "") or "").strip().lower()
+                if meta_name != "matrix":
+                    continue
+
+                meta_id = str(getattr(meta, "id", "") or "").strip()
+                if meta_id:
+                    platform_ids.append(meta_id)
+        except Exception as e:
+            logger.debug(f"列出 Matrix 平台实例失败：{e}")
+
+        return platform_ids
+
+    @staticmethod
+    def get_matrix_platform(context, platform_id: str = "", fallback_to_first: bool = True):
+        """获取 Matrix 平台实例，优先匹配 platform_id。"""
         target_platform_id = str(platform_id or "")
         fallback_platform = None
 
@@ -303,20 +326,30 @@ class MatrixUtils:
         except Exception as e:
             logger.debug(f"获取 Matrix 平台实例失败：{e}")
 
-        return fallback_platform
+        if fallback_to_first:
+            return fallback_platform
+        return None
 
     @staticmethod
-    def get_matrix_client(context, platform_id: str = ""):
+    def get_matrix_client(
+        context, platform_id: str = "", fallback_to_first: bool = True
+    ):
         """获取 Matrix 客户端实例。"""
-        platform = MatrixUtils.get_matrix_platform(context, platform_id)
+        platform = MatrixUtils.get_matrix_platform(
+            context, platform_id, fallback_to_first=fallback_to_first
+        )
         if platform is None:
             return None
         return getattr(platform, "client", None)
 
     @staticmethod
-    def get_matrix_e2ee_manager(context, platform_id: str = ""):
+    def get_matrix_e2ee_manager(
+        context, platform_id: str = "", fallback_to_first: bool = True
+    ):
         """获取 Matrix E2EE 管理器实例。"""
-        platform = MatrixUtils.get_matrix_platform(context, platform_id)
+        platform = MatrixUtils.get_matrix_platform(
+            context, platform_id, fallback_to_first=fallback_to_first
+        )
         if platform is None:
             return None
         return getattr(platform, "e2ee_manager", None)

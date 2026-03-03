@@ -62,14 +62,20 @@ class MatrixPlugin(Star):
     @filter.command("approve_device")
     @filter.permission_type(PermissionType.ADMIN)
     async def approve_device(
-        self, event: AstrMessageEvent, user_id: str, device_id: str
+        self,
+        event: AstrMessageEvent,
+        user_id: str,
+        device_id: str,
+        matrix_platform_id: str = "",
     ):
         """手动批准 Matrix 设备
 
-        用法：/approve_device <用户 ID> <设备 ID>
+        用法：
+            /approve_device <用户 ID> <设备 ID> [matrix_platform_id]
 
         示例：
             /approve_device @user:example.com DEVICEID123
+            /approve_device @user:example.com DEVICEID123 matrix-main
         """
         # Access E2EE Manager from the adapter
         e2ee_manager = None
@@ -87,14 +93,35 @@ class MatrixPlugin(Star):
             logger.debug(f"获取 e2ee_manager 失败：{e}")
 
         if not e2ee_manager:
-            target_platform_id = str(event.get_platform_id() or "")
+            current_platform_name = str(event.get_platform_name() or "").strip().lower()
+            current_platform_id = str(event.get_platform_id() or "")
+            requested_platform_id = str(matrix_platform_id or "").strip()
+
+            target_platform_id = requested_platform_id
+            if not target_platform_id and current_platform_name == "matrix":
+                target_platform_id = current_platform_id
+
+            if not target_platform_id and current_platform_name != "matrix":
+                matrix_platform_ids = MatrixUtils.list_matrix_platform_ids(self.context)
+                if not matrix_platform_ids:
+                    yield event.plain_result("未检测到可用的 Matrix 适配器")
+                    return
+                if len(matrix_platform_ids) > 1:
+                    yield event.plain_result(
+                        "检测到多个 Matrix 适配器，请在命令末尾指定 matrix_platform_id：\n"
+                        + "\n".join(f"- {platform_id}" for platform_id in matrix_platform_ids)
+                    )
+                    return
+                target_platform_id = matrix_platform_ids[0]
+
             e2ee_manager = MatrixUtils.get_matrix_e2ee_manager(
                 self.context,
                 target_platform_id,
+                fallback_to_first=not bool(target_platform_id),
             )
 
         if not e2ee_manager:
-            yield event.plain_result("端到端加密未启用或不可用")
+            yield event.plain_result("端到端加密未启用、不可用，或指定的 Matrix 适配器不存在")
             return
 
         verification = getattr(e2ee_manager, "_verification", None)
