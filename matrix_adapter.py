@@ -5,7 +5,6 @@ from pathlib import Path
 
 from astrbot.api import logger
 from astrbot.api.platform import Platform, PlatformMetadata, register_platform_adapter
-from astrbot.core.config.astrbot_config import AstrBotConfig
 
 from .adapter_message import MatrixAdapterMessageMixin
 from .adapter_runtime import MatrixAdapterRuntimeMixin
@@ -159,8 +158,6 @@ class MatrixPlatformAdapter(
         event_queue: asyncio.Queue,
     ) -> None:
         super().__init__(platform_config, event_queue)
-        # 保存原始配置用于后续保存
-        self._original_config = platform_config
         # Store MatrixConfig separately to maintain functionality
         self._matrix_config = MatrixConfig(platform_config)
         # 记录启动时间（毫秒）。用于过滤启动前的历史消息，避免启动时回复历史消息
@@ -325,7 +322,6 @@ class MatrixPlatformAdapter(
             support_streaming_message=False,
         )
 
-
     async def _persist_auth_config_if_needed(self) -> None:
         access_token = str(getattr(self.auth, "access_token", "") or "")
         refresh_token = str(getattr(self.auth, "refresh_token", "") or "")
@@ -347,45 +343,33 @@ class MatrixPlatformAdapter(
         return refreshed
 
     async def _save_config(self) -> bool:
-        """Save configuration changes back to the platform config"""
+        """Save configuration changes back to the current platform config."""
+        if self.config_owner is None:
+            logger.warning("保存 Matrix 配置失败：当前平台实例缺少 config_owner")
+            return False
+
         try:
-            # Import here to avoid circular dependency
-
-            # Load the main config
-            main_config = AstrBotConfig()
-
-            # Find and update our platform config
             changed_fields: list[str] = []
-            for platform in main_config.get("platform", []):
-                if platform.get("id") == self._original_config.get("id"):
-                    # device_id 现在由系统管理，不再保存到配置中
-                    access_token = str(self._matrix_config.access_token or "").strip()
-                    refresh_token = str(
-                        getattr(self._matrix_config, "refresh_token", "") or ""
-                    ).strip()
-                    user_id = str(self._matrix_config.user_id or "").strip()
-                    if (
-                        access_token
-                        and platform.get("matrix_access_token") != access_token
-                    ):
-                        platform["matrix_access_token"] = access_token
-                        changed_fields.append("matrix_access_token")
-                    if (
-                        refresh_token
-                        and platform.get("matrix_refresh_token") != refresh_token
-                    ):
-                        platform["matrix_refresh_token"] = refresh_token
-                        changed_fields.append("matrix_refresh_token")
-                    if user_id and platform.get("matrix_user_id") != user_id:
-                        platform["matrix_user_id"] = user_id
-                        changed_fields.append("matrix_user_id")
-                    break
+            config_updates = {
+                "matrix_access_token": str(
+                    self._matrix_config.access_token or ""
+                ).strip(),
+                "matrix_refresh_token": str(
+                    getattr(self._matrix_config, "refresh_token", "") or ""
+                ).strip(),
+                "matrix_user_id": str(self._matrix_config.user_id or "").strip(),
+            }
+
+            for field, value in config_updates.items():
+                if value and self.config.get(field) != value:
+                    self.config[field] = value
+                    changed_fields.append(field)
+
             if not changed_fields:
                 logger.debug("Matrix 配置无变化，跳过保存")
                 return True
 
-            # Save the updated config
-            main_config.save_config()
+            self.config_owner.save_config()
             logger.info(f"Matrix 适配器配置已更新：{', '.join(changed_fields)}")
             return True
         except Exception as e:
