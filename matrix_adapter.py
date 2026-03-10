@@ -344,10 +344,6 @@ class MatrixPlatformAdapter(
 
     async def _save_config(self) -> bool:
         """Save configuration changes back to the current platform config."""
-        if self.config_owner is None:
-            logger.warning("保存 Matrix 配置失败：当前平台实例缺少 config_owner")
-            return False
-
         try:
             changed_fields: list[str] = []
             config_updates = {
@@ -369,7 +365,31 @@ class MatrixPlatformAdapter(
                 logger.debug("Matrix 配置无变化，跳过保存")
                 return True
 
-            self.config_owner.save_config()
+            config_owner = getattr(self, "config_owner", None)
+            if config_owner is None:
+                try:
+                    from astrbot.core import astrbot_config as global_astrbot_config
+
+                    platform_id = str(self.config.get("id") or "")
+                    platform_type = str(self.config.get("type") or "matrix")
+                    for platform in global_astrbot_config.get("platform", []):
+                        if not isinstance(platform, dict):
+                            continue
+                        if platform is self.config or (
+                            str(platform.get("id") or "") == platform_id
+                            and str(platform.get("type") or "") == platform_type
+                        ):
+                            self.config = platform
+                            config_owner = global_astrbot_config
+                            break
+                except Exception as e:
+                    logger.debug(f"定位全局 Matrix 配置失败：{e}")
+
+            if config_owner is None:
+                logger.warning("保存 Matrix 配置失败：未找到可用的配置所有者")
+                return False
+
+            config_owner.save_config()
             logger.info(f"Matrix 适配器配置已更新：{', '.join(changed_fields)}")
             return True
         except Exception as e:
