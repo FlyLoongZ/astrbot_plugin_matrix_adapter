@@ -21,6 +21,7 @@ from .key_backup_crypto import (
     _decode_recovery_key,
     _decrypt_backup_data,
     _encode_recovery_key,
+    _x25519_key_from_bytes,
 )
 
 
@@ -94,12 +95,18 @@ class KeyBackupBackupMixin:
             if not expected_public_key:
                 return True
 
+            if len(key_bytes) != CRYPTO_KEY_SIZE_32:
+                logger.warning(
+                    f"密钥长度不正确：期望 {CRYPTO_KEY_SIZE_32} 字节，"
+                    f"实际 {len(key_bytes)} 字节"
+                )
+                return False
+
             # Always use cryptography for verification to generate consistent Public Key
             from cryptography.hazmat.primitives import serialization
-            from cryptography.hazmat.primitives.asymmetric import x25519
 
             # Derive Public Key from Private Key
-            priv = x25519.X25519PrivateKey.from_private_bytes(key_bytes)
+            priv = _x25519_key_from_bytes(key_bytes)
             pub = priv.public_key()
 
             # Matrix uses unpadded base64 representation of the raw bytes
@@ -202,9 +209,8 @@ class KeyBackupBackupMixin:
             # 根据 Matrix 规范，使用 X25519 从私钥派生公钥
             # 参考：https://spec.matrix.org/latest/client-server-api/#backup-algorithm-mmegolm_backupv1curve25519-aes-sha2
             from cryptography.hazmat.primitives import serialization
-            from cryptography.hazmat.primitives.asymmetric import x25519
 
-            private_key = x25519.X25519PrivateKey.from_private_bytes(
+            private_key = _x25519_key_from_bytes(
                 self._recovery_key_bytes
             )
             public_key_bytes = private_key.public_key().public_bytes(

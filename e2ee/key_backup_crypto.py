@@ -48,6 +48,32 @@ except ImportError:
     logger.debug("vodozemac PkDecryption 不可用")
 
 
+def _x25519_key_from_bytes(key_bytes: bytes):
+    """
+    从原始字节创建 X25519PrivateKey，兼容 OpenSSL 3.x。
+
+    OpenSSL 3.x 可能拒绝未经 clamping 的原始密钥字节。
+    RFC 7748 规定 X25519 在使用前会内部 clamp，因此 clamping 不影响派生的公钥。
+    """
+    from cryptography.hazmat.primitives.asymmetric import x25519
+
+    if len(key_bytes) != CRYPTO_KEY_SIZE_32:
+        raise ValueError(
+            f"X25519 密钥必须为 {CRYPTO_KEY_SIZE_32} 字节，实际 {len(key_bytes)} 字节"
+        )
+
+    try:
+        return x25519.X25519PrivateKey.from_private_bytes(key_bytes)
+    except (ValueError, Exception):
+        # OpenSSL 3.x 可能拒绝未 clamp 的密钥字节。
+        # 应用 RFC 7748 clamping 后重试，派生公钥不变。
+        clamped = bytearray(key_bytes)
+        clamped[0] &= 248
+        clamped[31] &= 127
+        clamped[31] |= 64
+        return x25519.X25519PrivateKey.from_private_bytes(bytes(clamped))
+
+
 def _compute_hkdf(
     input_key: bytes, salt: bytes, info: bytes, length: int = CRYPTO_KEY_SIZE_32
 ) -> bytes:
@@ -224,7 +250,7 @@ def _manual_decrypt_v1(
         from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
         # 1. ECDH: Calculate shared secret
-        private_key = x25519.X25519PrivateKey.from_private_bytes(private_key_bytes)
+        private_key = _x25519_key_from_bytes(private_key_bytes)
         public_key = x25519.X25519PublicKey.from_public_bytes(ephemeral_key_bytes)
         shared_secret = private_key.exchange(public_key)
 
