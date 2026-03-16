@@ -48,6 +48,18 @@ except ImportError:
     logger.debug("vodozemac PkDecryption 不可用")
 
 
+def _decode_base64_unpadded(s: str) -> bytes:
+    """解码 Matrix 使用的 unpadded base64（标准或 URL-safe）。"""
+    s = s.strip()
+    padding = 4 - len(s) % 4
+    if padding != 4:
+        s += "=" * padding
+    try:
+        return base64.b64decode(s)
+    except Exception:
+        return base64.urlsafe_b64decode(s)
+
+
 def _x25519_key_from_bytes(key_bytes: bytes):
     """
     从原始字节创建 X25519PrivateKey，兼容 OpenSSL 3.x。

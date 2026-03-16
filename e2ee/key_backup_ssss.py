@@ -11,7 +11,12 @@ from ..constants import (
     SSSS_DEFAULT_KEY,
     SSSS_KEY_PREFIX,
 )
-from .key_backup_crypto import CRYPTO_AVAILABLE, _aes_ctr_decrypt, _compute_hkdf
+from .key_backup_crypto import (
+    CRYPTO_AVAILABLE,
+    _aes_ctr_decrypt,
+    _compute_hkdf,
+    _decode_base64_unpadded,
+)
 
 
 class KeyBackupSSSSMixin:
@@ -170,10 +175,10 @@ class KeyBackupSSSSMixin:
                 if decrypted_ssss_key:
                     # Check if the decrypted key is base64 encoded (it usually is in SSSS)
                     try:
-                        # SSSS keys are often stored as base64 string in the payload
+                        # SSSS keys are often stored as unpadded base64 string
                         secret_str = decrypted_ssss_key.decode("utf-8")
                         if len(secret_str.strip()) >= 43:
-                            ssss_key = base64.b64decode(secret_str)
+                            ssss_key = _decode_base64_unpadded(secret_str)
                         else:
                             ssss_key = decrypted_ssss_key
                     except Exception:
@@ -203,11 +208,11 @@ class KeyBackupSSSSMixin:
 
             if decrypted_secret:
                 logger.info("SSSS MAC 验证成功，解密备份密钥成功")
-                # Check format (usually base64 string in Matrix)
+                # Check format (usually unpadded base64 string in Matrix)
                 try:
                     secret_str = decrypted_secret.decode("utf-8")
                     if len(secret_str.strip()) >= 43:
-                        return base64.b64decode(secret_str)
+                        return _decode_base64_unpadded(secret_str)
                     return decrypted_secret
                 except Exception:
                     return decrypted_secret
